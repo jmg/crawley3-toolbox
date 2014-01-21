@@ -1,4 +1,5 @@
 *.py[cod]
+py3env/
 
 # C extensions
 *.so
