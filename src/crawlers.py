@@ -13,7 +13,7 @@ class BaseCrawler:
         Thanks https://github.com/fafhrd91 :-)
     """
 
-    start_url = None
+    start_urls = []
 
     def __init__(self, maxtasks=100, debug=False, session=None, use_iocp=False):
 
@@ -36,14 +36,16 @@ class BaseCrawler:
 
     def start(self):
 
-        self.loop.add_signal_handler(signal.SIGINT, self.loop.stop)
-        asyncio.Task(self._run())
-        self.loop.run_forever()
+        for url in self.start_urls:
+
+            self.loop.add_signal_handler(signal.SIGINT, self.loop.stop)
+            asyncio.Task(self._run(url))
+            self.loop.run_forever()
 
     @asyncio.coroutine
-    def _run(self):
+    def _run(self, url):
 
-        asyncio.Task(self._add_urls([(self.start_url, '')]))  # Set initial work.
+        asyncio.Task(self._add_urls([(url, '')]))  # Set initial work.
         yield from asyncio.sleep(1)
         while self.busy:
             yield from asyncio.sleep(1)
@@ -59,17 +61,15 @@ class BaseCrawler:
             url = urllib.parse.urljoin(parenturl, url)
             url, frag = urllib.parse.urldefrag(url)
 
-            if (url.startswith(self.start_url) and
-                    url not in self.busy and
-                    url not in self.done and
-                    url not in self.todo):
+            if url in self.busy or url in self.done or url in self.todo:
+                continue
 
-                self.todo.add(url)
-                yield from self.sem.acquire()
-                task = asyncio.Task(self._process(url))
-                task.add_done_callback(lambda t: self.sem.release())
-                task.add_done_callback(self.tasks.remove)
-                self.tasks.add(task)
+            self.todo.add(url)
+            yield from self.sem.acquire()
+            task = asyncio.Task(self._process(url))
+            task.add_done_callback(lambda t: self.sem.release())
+            task.add_done_callback(self.tasks.remove)
+            self.tasks.add(task)
 
     @asyncio.coroutine
     def _process(self, url):

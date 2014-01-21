@@ -1,12 +1,9 @@
 from src.crawlers import BaseCrawler
-import asyncio
-import sys
-import signal
 
 
 class PyCrawler(BaseCrawler):
 
-    start_url = "http://python.org"
+    start_urls = ["http://python.org"]
 
 
 if __name__ == "__main__":
