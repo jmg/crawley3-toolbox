@@ -5,7 +5,9 @@ import asyncio
 import urllib.parse
 
 from .http import request, get_session
+from src.utils.colorprinter.ansi_formatter import AnsiColorsFormater
 
+ansi_colors = AnsiColorsFormater(timestamp=True)
 
 class BaseCrawler:
     """
@@ -75,14 +77,14 @@ class BaseCrawler:
     def _process(self, url):
 
         if self.debug:
-            print('Crawling ->', url)
+            ansi_colors.info_message('Crawling ->', url)
 
         self.todo.remove(url)
         self.busy.add(url)
         try:
             response = yield from request(url)
         except Exception as exc:
-            print('...', url, 'has error', repr(str(exc)))
+            ansi_colors.error_message('...', url, 'has error', repr(str(exc)))
             self.done[url] = False
         else:
             if response.status == 200 and response.get_content_type() == 'text/html':
@@ -96,4 +98,4 @@ class BaseCrawler:
         self.busy.remove(url)
 
         if self.debug:
-            print (len(self.done), 'completed tasks,', len(self.tasks), 'still pending, todo', len(self.todo))
+            ansi_colors.success_message(len(self.done), 'completed tasks,', len(self.tasks), 'still pending, todo', len(self.todo))
